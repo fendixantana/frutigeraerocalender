@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar and Pokéball</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('background.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .header {
+            background-color: #AED6F1;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header button {
+            background-color: #85C1E9;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1B4F72;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            padding: 10px;
+        }
+        .day {
+            background-color: #EBF5FB;
+            border: 1px solid #85C1E9;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        .day-header {
+            background-color: #85C1E9;
+            color: white;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #AED6F1;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .footer img {
+            width: 50px;
+            height: 50px;
+        }
+        .pokeball {
+            position: absolute;
+            top: 400px;
+            left: 300px;
+            background: url('pokeball.png') no-repeat center;
+            background-size: contain;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #000;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .pokeball:active {
+            cursor: grabbing;
+        }
+        .resize-buttons {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        .resize-buttons button {
+            background-color: #5DADE2;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+        #pokeball-tasks {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            word-wrap: break-word;
+            text-align: center;
+            padding: 5px;
+            overflow: auto;
+            width: 80%;
+            height: 35%;
+            box-sizing: border-box;
+            background: none;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button onclick="prevMonth()">&lt;</button>
+    <h1 id="month-label">January 2025</h1>
+    <button onclick="nextMonth()">&gt;</button>
+</div>
+
+<div class="calendar" id="calendar"></div>
+
+<div class="footer">
+    <img src="penguin.gif" alt="Penguin">
+    <img src="pikachu.gif" alt="Pikachu">
+    <img src="dolphin.gif" alt="Dolphin">
+</div>
+
+<div class="pokeball" id="pokeball">
+    <div class="resize-buttons">
+        <button onclick="resizePokeball(20)">+</button>
+        <button onclick="resizePokeball(-20)">-</button>
+    </div>
+    <div id="pokeball-tasks">No tasks for today</div>
+</div>
+
+<script>
+    let currentYear = 2025;
+    let currentMonth = 0; // January is 0
+    const pokeball = document.getElementById('pokeball');
+    const pokeballTasksElement = document.getElementById('pokeball-tasks');
+    const tasks = {}; // Store tasks for each day
+
+    function createCalendar(year, month) {
+        const calendar = document.getElementById('calendar');
+        calendar.innerHTML = '';
+
+        const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        daysOfWeek.forEach(day => {
+            const header = document.createElement('div');
+            header.classList.add('day', 'day-header');
+            header.textContent = day;
+            calendar.appendChild(header);
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const offset = firstDay === 0 ? 6 : firstDay - 1;
+
+        for (let i = 0; i < offset; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.classList.add('day');
+            calendar.appendChild(emptyCell);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.classList.add('day');
+            dayCell.innerHTML = `<strong>${day}</strong>`;
+
+            const taskButton = document.createElement('button');
+            taskButton.textContent = '+';
+            taskButton.onclick = () => addTask(day);
+            dayCell.appendChild(taskButton);
+
+            if (tasks[day]) {
+                tasks[day].forEach(task => {
+                    const taskDiv = document.createElement('div');
+                    taskDiv.textContent = task;
+                    taskDiv.style.background = '#D6EAF8';
+                    taskDiv.style.margin = '5px 0';
+                    dayCell.appendChild(taskDiv);
+                });
+            }
+
+            calendar.appendChild(dayCell);
+        }
+    }
+
+    function addTask(day) {
+        const task = prompt(`Enter a task for Day ${day}:`);
+        if (task) {
+            if (!tasks[day]) tasks[day] = [];
+            tasks[day].push(task);
+            updatePokeballTasks();
+            createCalendar(currentYear, currentMonth);
+        }
+    }
+
+    function updatePokeballTasks() {
+        const today = new Date().getDate();
+        const tasksForToday = tasks[today]?.join('\n') || 'No tasks for today';
+        pokeballTasksElement.textContent = tasksForToday;
+    }
+
+    function prevMonth() {
+        if (currentMonth === 0) {
+            currentMonth = 11;
+            currentYear--;
+        } else {
+            currentMonth--;
+        }
+        updateMonthLabel();
+        createCalendar(currentYear, currentMonth);
+    }
+
+    function nextMonth() {
+        if (currentMonth === 11) {
+            currentMonth = 0;
+            currentYear++;
+        } else {
+            currentMonth++;
+        }
+        updateMonthLabel();
+        createCalendar(currentYear, currentMonth);
+    }
+
+    function updateMonthLabel() {
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        document.getElementById('month-label').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    }
+
+    function midnightTaskUpdate() {
+        const now = new Date();
+        const millisUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+
+        setTimeout(() => {
+            updatePokeballTasks();
+            midnightTaskUpdate();
+        }, millisUntilMidnight);
+    }
+
+    // Resize functionality for Pokéball
+    function resizePokeball(change) {
+        const currentWidth = pokeball.offsetWidth;
+        const currentHeight = pokeball.offsetHeight;
+        const newWidth = currentWidth + change;
+        const newHeight = currentHeight + change;
+
+        if (newWidth >= 100 && newHeight >= 100) { // Minimum size of 100x100
+            pokeball.style.width = `${newWidth}px`;
+            pokeball.style.height = `${newHeight}px`;
+            pokeballTasksElement.style.width = `${newWidth * 0.8}px`;
+            pokeballTasksElement.style.height = `${newHeight * 0.35}px`;
+        }
+    }
+
+    // Drag functionality for Pokéball
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    pokeball.addEventListener('mousedown', (e) => {
+        if (!e.target.classList.contains('resize-buttons')) {
+            isDragging = true;
+            offsetX = e.clientX - pokeball.offsetLeft;
+            offsetY = e.clientY - pokeball.offsetTop;
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            pokeball.style.left = `${e.clientX - offsetX}px`;
+            pokeball.style.top = `${e.clientY - offsetY}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // Initialize calendar
+    updateMonthLabel();
+    createCalendar(currentYear, currentMonth);
+    updatePokeballTasks();
+    midnightTaskUpdate();
+</script>
+
+</body>
+</html>
